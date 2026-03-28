@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pesanan Berhasil - Pet Butler</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f8f9fa; }
+        .text-orange { color: #ff914d; }
+        .btn-pet { background-color: #ff914d; color: white; border-radius: 10px; font-weight: bold; }
+        .btn-pet:hover { background-color: #e6732f; color: white; }
+        .card-success { border-radius: 15px; border: none; }
+        .check-icon { font-size: 50px; color: #28a745; }
+    </style>
+</head>
+<body>
+
+<div class="container vh-100 d-flex align-items-center justify-content-center">
+    <div class="card card-success shadow-lg text-center p-4" style="width: 100%; max-width: 500px;">
+        <div class="card-body">
+            <div class="mb-3">
+                <span class="check-icon">✔</span>
+            </div>
+            <h2 class="fw-bold text-orange mb-3">Terima Kasih!</h2>
+            <p class="text-muted">Pesanan Anda telah berhasil dibuat dan sedang kami proses.</p>
+            
+            <div class="bg-light p-3 rounded-3 mb-4 text-start">
+                <h6 class="fw-bold border-bottom pb-2">Detail Pesanan Terakhir:</h6>
+                {% if orders %}
+                    {% set last = orders[-1] %}
+                    <div class="d-flex justify-content-between small mb-1">
+                        <span>ID Pesanan:</span> <strong>#{{ last.id_pesanan }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between small mb-1">
+                        <span>Layanan:</span> <strong>{{ last.service }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between small">
+                        <span>Total Bayar:</span> <strong class="text-success">Rp {{ "{:,.0f}".format(last.total) }}</strong>
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="d-grid gap-2">
+                <a href="/dashboard" class="btn btn-pet py-2">Kembali ke Dashboard</a>
+                <p class="small text-muted mt-2">Butuh bantuan? Hubungi CS kami di 0812-xxxx-xxxx</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

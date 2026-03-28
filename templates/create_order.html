@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Buat Pesanan - Pet Butler</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
+    
+    <style>
+        body { background-color: #f8f9fa; }
+        .text-orange { color: #ff914d; }
+        .btn-pet { background-color: #ff914d; color: white; border: none; font-weight: bold; }
+        .btn-pet:hover { background-color: #e6732f; color: white; }
+        #map { 
+            height: 350px; 
+            width: 100%; 
+            border-radius: 15px; 
+            margin-bottom: 20px; 
+            border: 2px solid #ff914d;
+            z-index: 1;
+        }
+        .leaflet-routing-container { display: none; }
+    </style>
+</head>
+<body>
+    <div class="container mt-5 mb-5" style="max-width: 700px;">
+        <h2 class="text-center fw-bold text-orange mb-4">🐾 Buat Pesanan Antar Jemput</h2>
+
+        {% if message %}
+        <div class="alert alert-success text-center shadow-sm">{{ message }}</div>
+        {% endif %}
+
+        <div class="card shadow-lg border-0" style="border-radius: 20px;">
+            <div class="card-body p-4">
+                <p class="text-muted text-center small">Geser penanda di peta untuk menentukan rute presisi</p>
+                
+                <div id="map"></div>
+
+                <form action="/checkout" method="POST">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold small">Pilih Hewan</label>
+                            <select name="pet" class="form-select" required>
+                                {% for pet in pets %}
+                                <option value="{{ pet.name }}">{{ pet.name }}</option>
+                                {% else %}
+                                <option value="Hewan Tamu">Hewan Tamu</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold small">Tipe Layanan</label>
+                            <select name="service_type" id="service_type" class="form-select" required>
+                                <option value="Motor VIP">Motor VIP (Murah & Cepat)</option>
+                                <option value="Mobil AC">Mobil AC VIP (Nyaman)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small">Titik Jemput (Cari di Peta)</label>
+                        <div class="input-group">
+                            <input type="text" id="pickup_name" name="pickup" class="form-control" placeholder="Cari gedung/lokasi..." required>
+                            <button class="btn btn-outline-secondary" type="button" onclick="searchLocation('pickup')">🔍 Cari</button>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small">Lokasi Tujuan</label>
+                        <div class="input-group">
+                            <input type="text" id="destination_name" name="destination" class="form-control" placeholder="Cth: Klinik Hewan Ragunan" required>
+                            <button class="btn btn-outline-secondary" type="button" onclick="searchLocation('destination')">🔍 Cari</button>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-bold small">Detail Alamat Penjemputan (Patokan/No. Rumah)</label>
+                        <input type="text" name="pickup_detail" class="form-control" placeholder="Contoh: Jl. Pegangsaan Timur No. 56, depan warung kopi" required>
+                    </div>
+
+                    <div id="summary_box" class="p-3 mb-4 border-0 shadow-sm" style="display: none; background-color: #fff8f4; border-radius: 10px;">
+                        <h6 class="fw-bold text-orange"><i class="bi bi-receipt"></i> Ringkasan Biaya</h6>
+                        <hr>
+                        <div class="d-flex justify-content-between small mb-1">
+                            <span>Jarak Tempuh:</span>
+                            <span id="display_distance" class="fw-bold">0 KM</span>
+                        </div>
+                        <div class="d-flex justify-content-between small mb-1">
+                            <span>Biaya Layanan:</span>
+                            <span id="display_base_price" class="fw-bold">Rp 0</span>
+                        </div>
+                        <div class="d-flex justify-content-between small mb-3">
+                            <span>Biaya Jarak:</span>
+                            <span id="display_distance_price" class="fw-bold">Rp 0</span>
+                        </div>
+                        <div class="d-flex justify-content-between border-top pt-2">
+                            <span class="fw-bold">Total Estimasi:</span>
+                            <span id="display_total" class="fw-bold text-success fs-5">Rp 0</span>
+                        </div>
+                    </div>
+                    
+                    <input type="hidden" id="distance_input" name="distance" value="0">
+                    
+                    <button type="submit" class="btn btn-pet w-100 py-3 fs-5 shadow">Lanjut ke Pembayaran</button>
+                </form>
+            </div>
+        </div>
+        <div class="text-center mt-3">
+            <a href="/dashboard" class="text-muted text-decoration-none small">← Kembali ke Dashboard</a>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
+
+    <script>
+        var map = L.map('map').setView([-6.2088, 106.8456], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+        var control = L.Routing.control({
+            waypoints: [
+                L.latLng(-6.2088, 106.8456),
+                L.latLng(-6.2150, 106.8550)
+            ],
+            routeWhileDragging: true,
+            lineOptions: { styles: [{color: '#ff914d', weight: 6}] }
+        }).addTo(map);
+
+        function searchLocation(type) {
+            var query = (type === 'pickup') ? 
+                        document.getElementById('pickup_name').value : 
+                        document.getElementById('destination_name').value;
+
+            if (query.length < 3) return alert("Lokasi terlalu pendek!");
+
+            fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${query}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.length > 0) {
+                        var newLatLng = L.latLng(data[0].lat, data[0].lon);
+                        if (type === 'pickup') control.spliceWaypoints(0, 1, newLatLng);
+                        else control.spliceWaypoints(1, 1, newLatLng);
+                        map.setView(newLatLng, 15);
+                    } else { alert("Lokasi tidak ditemukan!"); }
+                });
+        }
+
+        control.on('routesfound', function(e) {
+            var summary = e.routes[0].summary;
+            var jarak = summary.totalDistance / 1000;
+            
+            var serviceType = document.getElementById("service_type").value;
+            var hargaDasar = (serviceType === "Mobil AC") ? 50000 : 20000;
+            var tarifPerKM = (serviceType === "Mobil AC") ? 8000 : 4000;
+            
+            var biayaJarak = jarak * tarifPerKM;
+            var totalBiaya = hargaDasar + biayaJarak;
+
+            document.getElementById('distance_input').value = jarak.toFixed(2);
+            document.getElementById('summary_box').style.display = 'block';
+            document.getElementById('display_distance').innerText = jarak.toFixed(2) + " KM";
+            document.getElementById('display_base_price').innerText = "Rp " + hargaDasar.toLocaleString('id-ID');
+            document.getElementById('display_distance_price').innerText = "Rp " + biayaJarak.toLocaleString('id-ID');
+            document.getElementById('display_total').innerText = "Rp " + Math.round(totalBiaya).toLocaleString('id-ID');
+        });
+
+        document.getElementById("service_type").onchange = function() { control.route(); };
+    </script>
+</body>
+</html>

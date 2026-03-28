@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Pembayaran - Pet Butler</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .text-orange { color: #ff914d; }
+        .card-bill { border-radius: 15px; border: 2px dashed #ff914d; background: #fffcf9; }
+    </style>
+</head>
+<body class="bg-light">
+    <div class="container mt-5" style="max-width: 500px;">
+        <h3 class="fw-bold text-center text-orange mb-4">💳 Checkout & Pembayaran</h3>
+        
+        <div class="card card-bill shadow-sm mb-4">
+            <div class="card-body">
+                <h5 class="fw-bold mb-3 text-center">Rincian Tagihan</h5>
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Layanan:</span> <strong>{{ bill.service }}</strong>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Jarak:</span> <strong>{{ bill.distance }} KM</strong>
+                </div>
+                <hr>
+                <div class="small text-muted mb-1">Penjemputan:</div>
+                <div class="fw-bold mb-2">{{ bill.pickup }}</div>
+                <div class="small text-muted mb-1">Tujuan:</div>
+                <div class="fw-bold mb-3">{{ bill.destination }}</div>
+                <hr>
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="fs-5">Total Bayar:</span>
+                    <span class="fs-4 fw-bold text-success">Rp {{ "{:,.0f}".format(bill.total) }}</span>
+                </div>
+            </div>
+        </div>
+
+        <form action="/confirm_payment" method="POST">
+            <input type="hidden" name="pet" value="{{ bill.pet }}">
+            <input type="hidden" name="service" value="{{ bill.service }}">
+            <input type="hidden" name="pickup" value="{{ bill.pickup }}">
+            <input type="hidden" name="destination" value="{{ bill.destination }}">
+            <input type="hidden" name="total" value="{{ bill.total }}">
+
+            <div class="mb-4">
+                <label class="form-label fw-bold">Pilih Metode Pembayaran:</label>
+                <div class="form-check p-3 border rounded mb-2 bg-white">
+                    <input class="form-check-input" type="radio" name="payment_method" value="Cash" id="cash" checked>
+                    <label class="form-check-label d-flex justify-content-between w-100" for="cash">
+                        <span>💵 Tunai (Bayar ke Driver)</span>
+                    </label>
+                </div>
+                <div class="form-check p-3 border rounded bg-white">
+                    <input class="form-check-input" type="radio" name="payment_method" value="Bank Transfer" id="bank">
+                    <label class="form-check-label d-flex justify-content-between w-100" for="bank">
+                        <span>🏦 Bank Transfer (Otomatis)</span>
+                    </label>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-warning w-100 py-3 fw-bold text-white shadow" style="background-color: #ff914d;">
+                Bayar & Buat Pesanan
+            </button>
+        </form>
+    </div>
+</body>
+</html>

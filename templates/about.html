@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About Us - Pet Butler</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f8f9fa; }
+        .text-orange { color: #ff914d; }
+        .bg-orange { background-color: #ff914d; }
+        .card { border-radius: 20px; border: none; }
+        .faq-item { background: #fff; border-left: 5px solid #ff914d; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-dark bg-orange shadow-sm mb-5">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="/dashboard">🐾 Pet Butler</a>
+            <a href="/dashboard" class="btn btn-sm btn-outline-light">Kembali</a>
+        </div>
+    </nav>
+
+    <div class="container mb-5">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card shadow-sm p-4 mb-4">
+                    <h2 class="fw-bold text-orange mb-3">Tentang {{ data.name }}</h2>
+                    <p class="lead text-secondary">{{ data.description }}</p>
+                    <hr>
+                    <p class="mb-0 small text-muted">Hubungi Layanan Support: <strong>{{ data.support }}</strong></p>
+                </div>
+
+                <h4 class="fw-bold mb-3 mt-5">Pertanyaan Sering Diajukan (FAQ)</h4>
+                {% for item in data.faq %}
+                <div class="faq-item p-3 mb-2 shadow-sm">
+                    <p class="mb-0 fw-bold">{{ item }}</p>
+                </div>
+                {% endfor %}
+                
+                <div class="text-center mt-5">
+                    <p class="text-muted small">© 2026 Pet Butler Team - Transportasi Hewan Aman & Nyaman</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Tambah Catatan Medis - Pet Butler</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+    <div class="container mt-5" style="max-width: 600px;">
+        <div class="card shadow-sm border-0 rounded-4 p-4">
+            <h3 class="fw-bold text-orange mb-4">🏥 Tambah Catatan Medis</h3>
+            <form action="/add_medical_record/{{ pet_id }}" method="POST">
+                <div class="mb-3">
+                    <label class="form-label small fw-bold">Nama Klinik (clinicName)</label>
+                    <input type="text" name="clinic_name" class="form-control" placeholder="Cth: Happy Pet Clinic" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small fw-bold">Tanggal Kunjungan (visitDate)</label>
+                    <input type="date" name="visit_date" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small fw-bold">Diagnosis</label>
+                    <textarea name="diagnosis" class="form-control" rows="2" placeholder="Cth: Infeksi jamur ringan" required></textarea>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small fw-bold">Tindakan (treatment)</label>
+                    <textarea name="treatment" class="form-control" rows="2" placeholder="Cth: Pemberian salep antifungal" required></textarea>
+                </div>
+                <button type="submit" class="btn btn-warning w-100 fw-bold py-2">Simpan Catatan</button>
+                <a href="/medical_history/{{ pet_id }}" class="btn btn-link w-100 text-muted text-decoration-none">Batal</a>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

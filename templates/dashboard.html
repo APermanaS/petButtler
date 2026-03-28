@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pet Butler Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f8f9fa; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .navbar { background-color: #ff914d; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .text-orange { color: #ff914d; }
+        .btn-pet { background-color: #ff914d; color: white; border-radius: 10px; font-weight: 600; }
+        .btn-pet:hover { background-color: #e6732f; color: white; }
+        
+        .hero-container {
+            position: relative;
+            border-radius: 20px;
+            overflow: hidden;
+            min-height: 280px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+
+        .hero-bg {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-image: url("{{ url_for('static', filename='images/image_4ac61b.png') }}");
+            background-size: cover;
+            background-position: center;
+            z-index: 1;
+        }
+
+        .hero-overlay {
+            position: relative;
+            z-index: 2;
+            width: 100%;
+            height: 100%;
+            padding: 40px 20px;
+            background: linear-gradient(to right, rgba(255, 145, 77, 0.9), rgba(255, 189, 89, 0.7));
+            color: white;
+            text-align: center;
+        }
+
+        .card-service { 
+            border: none; 
+            border-radius: 15px; 
+            transition: all 0.3s ease; 
+        }
+        .card-service:hover { transform: translateY(-5px); }
+        
+        .status-card {
+            border-radius: 15px;
+            border-left: 5px solid #ff914d;
+        }
+
+        .pet-card {
+            border: none;
+            border-radius: 15px;
+            transition: all 0.2s ease;
+        }
+        .pet-card:hover { 
+            box-shadow: 0 5px 15px rgba(255, 145, 77, 0.2);
+            background-color: #fffaf7;
+        }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg navbar-dark shadow-sm">
+    <div class="container">
+        <a class="navbar-brand fw-bold fs-4" href="/dashboard">🐾 Pet Butler</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto align-items-center">
+                <li class="nav-item"><a class="nav-link text-white fw-medium me-3" href="/about">About Us</a></li>
+                <li class="nav-item d-none d-lg-block"><span class="text-white me-3">Hi, <strong>{{ username }}</strong> 👋</span></li>
+                <li class="nav-item"><a href="/profile" class="btn btn-outline-light btn-sm me-2 fw-bold px-3">Edit Profil</a></li>
+                <li class="nav-item"><a href="/add_pet" class="btn btn-light btn-sm me-2 fw-bold text-orange px-3">+ Hewan</a></li>
+                <li class="nav-item"><a href="{{ url_for('logout') }}" class="btn btn-danger btn-sm fw-bold px-3">Logout</a></li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div class="container mt-4">
+    <div class="hero-container">
+        <div class="hero-bg"></div>
+        <div class="hero-overlay">
+            <h2 class="fw-bold display-6">Transportasi Aman Untuk<br>Hewan Kesayanganmu</h2>
+            <p class="lead">Cepat • Aman • Terpercaya</p>
+            <a href="/create_order" class="btn btn-light btn-lg mt-2 px-5 fw-bold text-orange shadow">Pesan Sekarang</a>
+        </div>
+    </div>
+
+    <div class="row text-center mb-5">
+        <div class="col-md-4 mb-3">
+            <div class="card card-service shadow-sm h-100 p-3">
+                <div class="card-body">
+                    <div class="display-5 mb-2">🚕</div>
+                    <h5 class="fw-bold">Antar Jemput</h5>
+                    <p class="text-muted small">Kunjungan klinik, grooming, atau taman bermain.</p>
+                    <a href="/create_order" class="btn btn-pet btn-sm px-4">Pesan</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-3">
+            <div class="card card-service shadow-sm h-100 p-3">
+                <div class="card-body text-center">
+                    <div class="display-5 mb-2">🏥</div>
+                    <h5 class="fw-bold">Klinik Hewan</h5>
+                    <p class="text-muted small">Catat diagnosis dan tindakan medis hewanmu.</p>
+                    <a href="{{ url_for('klinik') }}" class="btn btn-pet btn-sm px-4">Pilih Hewan</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-3">
+            <div class="card card-service shadow-sm h-100 p-3">
+                <div class="card-body">
+                    <div class="display-5 mb-2">📜</div>
+                    <h5 class="fw-bold">Riwayat Order</h5>
+                    <p class="text-muted small">Pantau status pengiriman dan transaksi.</p>
+                    <a href="/orders" class="btn btn-pet btn-sm px-4">Cek</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card status-card shadow-sm mb-5">
+        <div class="card-body p-4">
+            <h6 class="fw-bold mb-3"><span class="text-orange">●</span> Status Order Terakhir</h6>
+            {% if latest_order %}
+                <div class="p-3 bg-light rounded-3 border">
+                    <p class="mb-0 small">
+                        Pesanan <strong>{{ latest_order.pet }}</strong> ke <strong>{{ latest_order.destination }}</strong>
+                        <span class="badge bg-success float-end">Status: {{ latest_order.status }}</span>
+                    </p>
+                </div>
+            {% else %}
+                <p class="mb-0 text-muted small text-center"><em>Belum ada aktivitas order terbaru.</em></p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- <div id="my-pets" class="mb-5">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="fw-bold mb-0"><span class="text-orange">🐾</span> Hewan Kesayanganmu</h5>
+            <a href="/add_pet" class="btn btn-sm btn-link text-orange text-decoration-none fw-bold">+ Tambah Hewan</a>
+        </div>
+        
+        <div class="row">
+            {% if pets %}
+                {% for pet in pets %}
+                <div class="col-md-6 col-lg-4 mb-3">
+                    <div class="card pet-card shadow-sm p-3">
+                        <div class="d-flex align-items-center">
+                            <img src="{{ url_for('static', filename='images/pets/' + (pet.photo if pet.photo else 'default.png')) }}" 
+                                 style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover;" 
+                                 class="border border-2 border-orange">
+                            <div class="ms-3">
+                                <h6 class="mb-0 fw-bold">{{ pet.name }}</h6>
+                                <p class="text-muted mb-2" style="font-size: 11px;">{{ pet.species }} | {{ pet.breed or '-' }}</p>
+                                <a href="/medical_history/{{ pet.id }}" class="btn btn-sm btn-outline-warning rounded-pill py-0 px-3 fw-bold" style="font-size: 10px;">
+                                    🏥 Rekam Medis
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="col-12 text-center py-4 bg-white rounded-4 shadow-sm border border-dashed">
+                    <p class="text-muted small">Kamu belum mendaftarkan hewan.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div> -->
+</div>
+
+<footer class="text-center py-4 text-muted small">
+    &copy; 2026 Pet Butler Team
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tambah Hewan - Pet Butler</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f8f9fa; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .text-orange { color: #ff914d; }
+        .btn-pet { background-color: #ff914d; color: white; font-weight: bold; border-radius: 12px; transition: all 0.3s ease; border: none; }
+        .btn-pet:hover { background-color: #e6732f; color: white; transform: translateY(-2px); }
+        .card { border-radius: 20px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.08); }
+        .form-control, .form-select { border-radius: 10px; padding: 12px; border: 1px solid #ddd; }
+        .form-control:focus, .form-select:focus { border-color: #ff914d; box-shadow: 0 0 0 0.25 rgba(255, 145, 77, 0.25); }
+        
+        /* Box Upload Modern */
+        .pet-photo-upload {
+            position: relative;
+            border: 2px dashed #ff914d;
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            background-color: #fff8f4;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            overflow: hidden;
+            min-height: 180px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .pet-photo-upload:hover { background-color: #ffe8d8; border-color: #e6732f; }
+        
+        .pet-photo-upload input[type="file"] {
+            position: absolute;
+            width: 100%; height: 100%;
+            top: 0; left: 0;
+            opacity: 0; cursor: pointer;
+            z-index: 10;
+        }
+
+        #imagePreview img {
+            max-height: 140px;
+            border-radius: 10px;
+            object-fit: cover;
+            margin-bottom: 10px;
+        }
+
+        .upload-placeholder i { font-size: 40px; color: #ff914d; }
+    </style>
+</head>
+<body>
+    <div class="container mt-5 mb-5" style="max-width: 500px;">
+        <div class="card shadow-lg">
+            <div class="card-body p-4 p-md-5">
+                <div class="text-center mb-4">
+                    <h2 class="fw-bold text-orange">🐾 Tambah Hewan</h2>
+                    <p class="text-muted small">Informasi ini membantu driver mengenali hewanmu saat penjemputan.</p>
+                </div>
+
+                <form action="/add_pet" method="POST" enctype="multipart/form-data">
+                    
+                    <div class="mb-4 text-center">
+                        <label class="form-label fw-bold small d-block text-start">Foto Hewan</label>
+                        <div class="pet-photo-upload" id="uploadBox">
+                            <input type="file" name="pet_photo" id="pet_photo" accept="image/*" required onchange="previewImage()">
+                            
+                            <div id="imagePreview" style="display: none;"></div>
+
+                            <div id="placeholderContent" class="upload-placeholder">
+                                <div style="font-size: 40px;">📸</div>
+                                <p class="pet-photo-text mb-1 fw-bold text-orange">Klik atau Tarik Foto</p>
+                                <p class="text-muted small" style="font-size: 11px;">Format: JPG, PNG (Maks. 2MB)</p>
+                            </div>
+                        </div>
+                        <p class="text-muted mt-2" style="font-size: 11px;">*Wajib diunggah agar driver tidak salah jemput.</p>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small">Nama Hewan</label>
+                        <input type="text" name="pet_name" class="form-control" placeholder="Cth: Snowy, Cimot, Milo" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small">Spesies</label>
+                        <select name="species" class="form-select" required>
+                            <option value="" selected disabled>Pilih Jenis Hewan</option>
+                            <option value="Kucing">Kucing</option>
+                            <option value="Anjing">Anjing</option>
+                            <option value="Kelinci">Kelinci</option>
+                            <option value="Burung">Burung</option>
+                            <option value="Lainnya">Lainnya</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-bold small">Ras / Breed (Opsional)</label>
+                        <input type="text" name="breed" class="form-control" placeholder="Cth: Anggora, Persia, Golden">
+                    </div>
+
+                    <button type="submit" class="btn btn-pet w-100 py-3 shadow-sm mb-3">Daftarkan Hewan</button>
+                    <a href="/dashboard" class="btn btn-link w-100 text-muted text-decoration-none small">Batal</a>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    function previewImage() {
+        const file = document.getElementById('pet_photo').files[0];
+        const preview = document.getElementById('imagePreview');
+        const placeholder = document.getElementById('placeholderContent');
+        const uploadBox = document.getElementById('uploadBox');
+        
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                // Tampilkan gambar
+                preview.innerHTML = `<img src="${e.target.result}" class="shadow-sm border">
+                                     <p class="text-success small mb-0 fw-bold">✓ Foto siap diunggah</p>
+                                     <p class="text-muted" style="font-size: 10px;">Klik lagi untuk mengganti</p>`;
+                preview.style.display = 'block';
+                placeholder.style.display = 'none';
+                uploadBox.style.backgroundColor = '#fff';
+            }
+            reader.readAsDataURL(file);
+        }
+    }
+    </script>
+</body>
+</html>

@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rekam Medis - Pet Butler</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f8f9fa; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .navbar { background-color: #ff914d; }
+        .text-orange { color: #ff914d; }
+        .btn-orange { background-color: #ff914d; color: white; border-radius: 10px; font-weight: 600; transition: 0.3s; }
+        .btn-orange:hover { background-color: #e6732f; color: white; }
+        .card-custom { border: none; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .table thead { background-color: #fffaf7; color: #ff914d; }
+        .badge-medical { background-color: #fffaf7; color: #ff914d; border: 1px solid #ff914d; font-weight: 600; }
+        .border-dashed { border: 2px dashed #dee2e6 !important; }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-dark shadow-sm mb-4">
+    <div class="container">
+        <a class="navbar-brand fw-bold" href="/dashboard">🐾 Pet Butler</a>
+        <a href="/klinik" class="btn btn-sm btn-outline-light px-3">← Kembali ke Klinik</a>
+    </div>
+</nav>
+
+<div class="container mt-5">
+    <div class="d-flex justify-content-between align-items-end mb-4">
+        <div>
+            <h6 class="text-orange fw-bold mb-1">REKAM MEDIS HEWAN</h6>
+            <h2 class="fw-bold mb-0">Riwayat Kesehatan <span class="text-orange">{{ pet_name }}</span></h2>
+        </div>
+        <a href="/add_medical_record/{{ pet_id }}" class="btn btn-orange px-4 py-2 shadow-sm">
+            + Tambah Catatan
+        </a>
+    </div>
+
+    {% if records %}
+        <div class="card card-custom overflow-hidden">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th class="ps-4 py-3">Tanggal Kunjungan</th>
+                            <th class="py-3">Nama Klinik</th>
+                            <th class="py-3">Diagnosis</th>
+                            <th class="pe-4 py-3">Tindakan / Obat</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for record in records %}
+                        <tr>
+                            <td class="ps-4 fw-medium">{{ record.visit_date }}</td>
+                            <td>{{ record.clinic_name }}</td>
+                            <td><span class="badge badge-medical px-3 py-2">{{ record.diagnosis }}</span></td>
+                            <td class="pe-4 text-muted">{{ record.treatment }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    {% else %}
+        <div class="text-center py-5 bg-white card-custom border-dashed">
+            <div class="display-1 mb-3">📄</div>
+            <h4 class="fw-bold text-dark">Hewan ini belum pernah di rekam medis</h4>
+            <p class="text-muted mb-4">Belum ada riwayat pengobatan yang tercatat untuk <strong>{{ pet_name }}</strong>.</p>
+            <a href="/add_medical_record/{{ pet_id }}" class="btn btn-orange px-5">+ Buat Catatan Pertama</a>
+        </div>
+    {% endif %}
+
+    <div class="mt-5 text-center">
+        <p class="text-muted small">Jika ada kendala akses data, hubungi tim support Pet Butler.</p>
+    </div>
+</div>
+
+<footer class="text-center py-4 text-muted small">
+    &copy; 2026 Pet Butler Medical Service
+</footer>
+
+</body>
+</html>
