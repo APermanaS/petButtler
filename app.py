@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request, redirect, url_for, session
+from flask_sqlalchemy import SQLAlchemy
 from werkzeug.utils import secure_filename
 from datetime import datetime
 import uuid
@@ -20,34 +21,95 @@ if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
 # ==============================
-# DATA SEMENTARA (DATABASE MOCKUP)
+# KONFIGURASI DATABASE MYSQL
 # ==============================
-# Pindahkan semua dictionary ke atas agar bisa diakses semua route
-pets_data = {}
-orders_data = {}
-user_profiles = {}
+# Format: mysql+pymysql://username:password@host/nama_database
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:@localhost/petbutler_db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+db = SQLAlchemy(app)
 
 # ==============================
-# LOGIKA BISNIS (CLASSES)
+# MODEL DATABASE (TABEL MYSQL)
 # ==============================
-class AuthSystem:
-    def __init__(self):
-        self.accounts = {}
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(50), unique=True, nullable=False)
+    email = db.Column(db.String(100), nullable=False)
+    password = db.Column(db.String(100), nullable=False) # Sebaiknya di-hash nanti
+    name = db.Column(db.String(100))
+    phone = db.Column(db.String(20))
+    address = db.Column(db.Text)
+    
+    # Relasi ke tabel lain
+    pets = db.relationship('Pet', backref='owner', lazy=True)
+    orders = db.relationship('Order', backref='customer', lazy=True)
 
-    def register(self, username, email, password):
-        if username in self.accounts:
-            return "Username sudah terdaftar!"
-        self.accounts[username] = {
-            "email": email,
-            "password": password
-        }
-        return "Registrasi berhasil!"
+class Pet(db.Model):
+    id = db.Column(db.String(10), primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    species = db.Column(db.String(50))
+    photo = db.Column(db.String(255), nullable=True)
+    breed = db.Column(db.String(50))
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    
+    records = db.relationship('MedicalRecord', backref='pet_info', lazy=True)
 
-    def login(self, email, password):
-        for username, data in self.accounts.items():
-            if data["email"] == email and data["password"] == password:
-                return username
-        return None
+class Order(db.Model):
+    id_pesanan = db.Column(db.String(10), primary_key=True)
+    pet = db.Column(db.String(100))
+    service = db.Column(db.String(100))
+    pickup = db.Column(db.Text)
+    destination = db.Column(db.Text)
+    total = db.Column(db.Float)
+    method = db.Column(db.String(50))
+    status = db.Column(db.String(50))
+    date = db.Column(db.String(50))
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+
+class MedicalRecord(db.Model):
+    record_id = db.Column(db.String(10), primary_key=True)
+    clinic_name = db.Column(db.String(100))
+    visit_date = db.Column(db.String(50))
+    diagnosis = db.Column(db.Text)
+    treatment = db.Column(db.Text)
+    notes = db.Column(db.Text)
+    pet_id = db.Column(db.String(10), db.ForeignKey('pet.id'), nullable=False)
+
+# Membuat tabel di MySQL jika belum ada
+with app.app_context():
+    db.create_all()
+
+
+# # ==============================
+# # DATA SEMENTARA (DATABASE MOCKUP)
+# # ==============================
+# # Pindahkan semua dictionary ke atas agar bisa diakses semua route
+# pets_data = {}
+# orders_data = {}
+# user_profiles = {}
+
+# # ==============================
+# # LOGIKA BISNIS (CLASSES)
+# # ==============================
+# class AuthSystem:
+#     def __init__(self):
+#         self.accounts = {}
+
+#     def register(self, username, email, password):
+#         if username in self.accounts:
+#             return "Username sudah terdaftar!"
+#         self.accounts[username] = {
+#             "email": email,
+#             "password": password
+#         }
+#         return "Registrasi berhasil!"
+
+#     def login(self, email, password):
+#         for username, data in self.accounts.items():
+#             if data["email"] == email and data["password"] == password:
+#                 return username
+#         return None
 
 class PetServices:
     def __init__(self, id_services, nama_services, harga_dasar):
@@ -78,7 +140,7 @@ class CompanyProfile:
             "support": self.support_email
         }
 
-auth_system = AuthSystem()
+#auth_system = AuthSystem()
 company_profile = CompanyProfile()
 
 # Fungsi bantuan untuk file
@@ -101,11 +163,18 @@ def register():
         username = request.form["username"]
         email = request.form["email"]
         password = request.form["password"]
-        result = auth_system.register(username, email, password)
-        if result == "Registrasi berhasil!":
-            return redirect(url_for("login", s="success"))
+        
+        # Cek apakah username sudah ada
+        existing_user = User.query.filter_by(username=username).first()
+        if existing_user:
+            message = "Username sudah terdaftar!"
         else:
-            message = result
+            # Simpan ke database
+            new_user = User(username=username, email=email, password=password)
+            db.session.add(new_user)
+            db.session.commit()
+            return redirect(url_for("login", s="success"))
+            
     return render_template("register.html", message=message)
 
 @app.route("/login", methods=["GET", "POST"])
@@ -114,12 +183,15 @@ def login():
     if request.method == "POST":
         email = request.form["email"]
         password = request.form["password"]
-        username = auth_system.login(email, password)
-        if username:
-            session["user"] = username
+        
+        # Cari user di database
+        user = User.query.filter_by(email=email, password=password).first()
+        if user:
+            session["user"] = user.username # Atau simpan user.id agar lebih aman
             return redirect(url_for("dashboard"))
         else:
-            message = "Login gagal!"
+            message = "Login gagal! Email atau password salah."
+            
     return render_template("login.html", message=message)
 
 @app.route("/dashboard")
@@ -128,21 +200,24 @@ def dashboard():
         return redirect(url_for("login"))
 
     username_login = session["user"]
+    # Cari user di database berdasarkan username dari session
+    user = User.query.filter_by(username=username_login).first()
     
-    # Ambil Data Profil
-    profile_data = user_profiles.get(username_login, {})
-    display_name = profile_data.get("name", username_login)
+    if not user:
+        return redirect(url_for("logout")) # Jika user terhapus tapi session masih ada
 
-    # Ambil Daftar Hewan (PENTING untuk Medical Record)
-    user_pets = pets_data.get(username_login, [])
+    # Ambil Data Profil (gunakan nama asli jika ada, jika tidak gunakan username)
+    display_name = user.name if user.name else user.username
 
-    # Ambil Order Terakhir
-    user_orders = orders_data.get(username_login, [])
-    latest_order = user_orders[-1] if user_orders else None
+    # Ambil Daftar Hewan milik user ini
+    user_pets = Pet.query.filter_by(user_id=user.id).all()
+
+    # Ambil Order Terakhir (diurutkan berdasarkan ID dari yang terbaru)
+    latest_order = Order.query.filter_by(user_id=user.id).order_by(Order.id_pesanan.desc()).first()
 
     return render_template("dashboard.html", 
                            username=display_name, 
-                           pets=user_pets,  # Kirim list hewan ke HTML
+                           pets=user_pets, 
                            latest_order=latest_order)
 
 @app.route("/add_pet", methods=["GET", "POST"])
@@ -151,28 +226,40 @@ def add_pet():
         return redirect(url_for("login"))
     
     username = session["user"]
+    user = User.query.filter_by(username=username).first()
     
     if request.method == "POST":
-        # Ambil data dari form (Pastikan atribut 'name' di HTML-mu sesuai)
         pet_name = request.form.get("pet_name") or request.form.get("name")
         species = request.form.get("species")
         breed = request.form.get("breed")
         
-        # Buat ID unik
-        new_pet = {
-            "id": str(uuid.uuid4())[:8],
-            "name": pet_name if pet_name else "Tanpa Nama", # Mencegah muncul 'None'
-            "species": species,
-            "breed": breed,
-            "photo": None # Set ke None dulu untuk pengecekan di HTML
-        }
+        # --- LOGIKA UPLOAD FOTO ---
+        filename = None
+        # UBAH 'photo' MENJADI 'pet_photo' DI DUA BARIS BAWAH INI:
+        if 'pet_photo' in request.files:
+            file = request.files['pet_photo']
+            if file and file.filename != '' and allowed_file(file.filename):
+                ext = file.filename.rsplit('.', 1)[1].lower()
+                filename = f"{uuid.uuid4().hex}.{ext}"
+                
+                file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                file.save(file_path)
+        # ---------------------------
 
-        if username not in pets_data:
-            pets_data[username] = []
+        # Buat data hewan baru
+        new_pet = Pet(
+            id=str(uuid.uuid4())[:8],
+            name=pet_name if pet_name else "Tanpa Nama",
+            species=species,
+            breed=breed,
+            photo=filename, # Simpan nama file ke MySQL
+            user_id=user.id 
+        )
         
-        pets_data[username].append(new_pet)
+        # Simpan ke DB
+        db.session.add(new_pet)
+        db.session.commit()
 
-        # SELESAI DAFTAR, LANGSUNG KE HALAMAN KLINIK
         return redirect(url_for("klinik"))
 
     return render_template("add_pet.html", username=username)
@@ -181,24 +268,32 @@ def add_pet():
 def profile():
     if "user" not in session:
         return redirect(url_for("login"))
+    
     username = session["user"]
+    user = User.query.filter_by(username=username).first()
+
     if request.method == "POST":
-        user_profiles[username] = {
-            "name": request.form.get("name"),
-            "phone": request.form.get("phone"),
-            "address": request.form.get("address")
-        }
-        return render_template("profile.html", profile=user_profiles[username], message="Profil berhasil diperbarui!")
-    profile_data = user_profiles.get(username, {"name": username, "phone": "", "address": ""})
-    return render_template("profile.html", profile=profile_data)
+        # Update data user yang ada di database
+        user.name = request.form.get("name")
+        user.phone = request.form.get("phone")
+        user.address = request.form.get("address")
+        
+        # Simpan perubahan
+        db.session.commit()
+        return render_template("profile.html", profile=user, message="Profil berhasil diperbarui!")
+    
+    return render_template("profile.html", profile=user)
 
 @app.route("/create_order", methods=["GET"])
 def create_order():
     if "user" not in session:
         return redirect(url_for("login"))
-    user = session["user"]
-    user_pets = pets_data.get(user, [])
+    
+    user = User.query.filter_by(username=session["user"]).first()
+    user_pets = Pet.query.filter_by(user_id=user.id).all()
+    
     return render_template("create_order.html", pets=user_pets)
+    
 
 @app.route("/checkout", methods=["POST"])
 def checkout():
@@ -232,30 +327,39 @@ def about():
 def confirm_payment():
     if "user" not in session:
         return redirect(url_for("login"))
-    user = session["user"]
+    
+    user = User.query.filter_by(username=session["user"]).first()
     method = request.form.get("payment_method")
-    new_order = {
-        "id_pesanan": str(uuid.uuid4())[:8].upper(),
-        "pet": request.form.get("pet"),
-        "service": request.form.get("service"),
-        "pickup": request.form.get("pickup"),
-        "destination": request.form.get("destination"),
-        "total": float(request.form.get("total", 0)),
-        "method": method,
-        "status": "Paid" if method == "Bank Transfer" else "Pending (Cash)",
-        "date": datetime.now().strftime("%d %b %Y, %H:%M")
-    }
-    if user not in orders_data:
-        orders_data[user] = []
-    orders_data[user].append(new_order)
+    
+    # Buat objek order baru
+    new_order = Order(
+        id_pesanan=str(uuid.uuid4())[:8].upper(),
+        pet=request.form.get("pet"),
+        service=request.form.get("service"),
+        pickup=request.form.get("pickup"),
+        destination=request.form.get("destination"),
+        total=float(request.form.get("total", 0)),
+        method=method,
+        status="Paid" if method == "Bank Transfer" else "Pending (Cash)",
+        date=datetime.now().strftime("%d %b %Y, %H:%M"),
+        user_id=user.id # Hubungkan dengan ID user yang memesan
+    )
+    
+    # Simpan ke database
+    db.session.add(new_order)
+    db.session.commit()
+    
     return redirect(url_for("orders"))
 
 @app.route("/orders")
 def orders():
     if "user" not in session:
         return redirect(url_for("login"))
-    user = session["user"]
-    user_orders = orders_data.get(user, [])
+    
+    user = User.query.filter_by(username=session["user"]).first()
+    # Ambil semua order milik user ini
+    user_orders = Order.query.filter_by(user_id=user.id).all()
+    
     return render_template("orders.html", orders=user_orders)
 
 @app.route("/logout")
@@ -295,20 +399,20 @@ def add_medical_record(pet_id):
         return redirect(url_for("login"))
 
     if request.method == "POST":
-        # Sesuai atribut di CRC Card: clinicName, visitDate, diagnosis, treatment
-        new_record = {
-            "record_id": str(uuid.uuid4())[:8].upper(),
-            "clinic_name": request.form.get("clinic_name"),
-            "visit_date": request.form.get("visit_date"),
-            "diagnosis": request.form.get("diagnosis"),
-            "treatment": request.form.get("treatment"),
-            "notes": request.form.get("notes")
-        }
+        # Buat rekam medis baru
+        new_record = MedicalRecord(
+            record_id=str(uuid.uuid4())[:8].upper(),
+            clinic_name=request.form.get("clinic_name"),
+            visit_date=request.form.get("visit_date"),
+            diagnosis=request.form.get("diagnosis"),
+            treatment=request.form.get("treatment"),
+            notes=request.form.get("notes"),
+            pet_id=pet_id # Hubungkan ke ID hewan yang sedang diperiksa
+        )
 
-        if pet_id not in medical_records:
-            medical_records[pet_id] = []
+        db.session.add(new_record)
+        db.session.commit()
         
-        medical_records[pet_id].append(new_record)
         return redirect(url_for("medical_history", pet_id=pet_id))
 
     return render_template("add_medical_record.html", pet_id=pet_id)
@@ -318,11 +422,10 @@ def klinik():
     if "user" not in session:
         return redirect(url_for("login"))
     
-    username = session["user"]
-    # Ambil data hewan milik user dari database/dictionary
-    user_pets = pets_data.get(username, []) 
+    user = User.query.filter_by(username=session["user"]).first()
+    user_pets = Pet.query.filter_by(user_id=user.id).all()
     
-    return render_template("klinik.html", username=username, pets=user_pets)
+    return render_template("klinik.html", username=user.username, pets=user_pets)
 
 
 @app.route("/medical_history/<pet_id>")
@@ -330,18 +433,12 @@ def medical_history(pet_id):
     if "user" not in session:
         return redirect(url_for("login"))
     
-    username = session["user"]
-    records = medical_records.get(pet_id, [])
+    # Ambil data hewan dari DB untuk mendapatkan namanya
+    pet = Pet.query.filter_by(id=pet_id).first()
+    pet_name = pet.name if pet else "Hewan"
     
-    # 1. Inisialisasi pet_name dengan nilai default agar tidak Error
-    pet_name = "Hewan" 
-    
-    # 2. Cari nama hewan yang sesuai dengan pet_id
-    user_pets = pets_data.get(username, [])
-    for pet in user_pets:
-        if pet['id'] == pet_id:
-            pet_name = pet['name']
-            break # Hentikan loop jika sudah ketemu
+    # Ambil semua rekam medis yang terhubung dengan pet_id ini
+    records = MedicalRecord.query.filter_by(pet_id=pet_id).all()
             
     return render_template("medical_history.html", 
                            records=records, 
