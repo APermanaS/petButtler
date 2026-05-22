@@ -1,0 +1,40 @@
+# =========================
+# Kredensial & Environment
+# =========================
+.env
+.venv
+env/
+venv/
+ENV/
+
+# =========================
+# Database & Instance Flask
+# =========================
+database/
+instance/
+*.sqlite3
+*.db
+
+# =========================
+# File Cache Python
+# =========================
+__pycache__/
+*.py[cod]
+*$py.class
+.webassets-cache
+
+# =========================
+# Upload File User
+# =========================
+# Mengabaikan semua gambar yang diupload user saat testing
+static/images/pets/*
+# Mengecualikan file .gitkeep agar foldernya tetap terbuat di GitHub
+!static/images/pets/.gitkeep
+
+# =========================
+# Konfigurasi Editor & OS
+# =========================
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

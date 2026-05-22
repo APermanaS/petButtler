@@ -2,14 +2,20 @@ from flask import Flask, render_template, request, redirect, url_for, session
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.utils import secure_filename
 from datetime import datetime
+from dotenv import load_dotenv
 import uuid
 import os
+
+# Memuat variabel environment dari file .env
+load_dotenv()
 
 # ==============================
 # KONFIGURASI APLIKASI
 # ==============================
 app = Flask(__name__)
-app.secret_key = "petbutlersecretkey"
+
+# Ambil Secret Key dari .env (Gunakan fallback sementara jika .env gagal terbaca)
+app.secret_key = os.environ.get("SECRET_KEY", "fallback_secret_key_if_missing")
 
 # Konfigurasi Upload Folder
 UPLOAD_FOLDER = 'static/images/pets'
@@ -23,8 +29,9 @@ if not os.path.exists(UPLOAD_FOLDER):
 # ==============================
 # KONFIGURASI DATABASE MYSQL
 # ==============================
-# Format: mysql+pymysql://username:password@host/nama_database
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:@localhost/petbutler_db'
+# Ambil URI dari .env
+db_uri = os.environ.get('DATABASE_URL')
+app.config['SQLALCHEMY_DATABASE_URI'] = db_uri
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
@@ -80,37 +87,9 @@ class MedicalRecord(db.Model):
 with app.app_context():
     db.create_all()
 
-
-# # ==============================
-# # DATA SEMENTARA (DATABASE MOCKUP)
-# # ==============================
-# # Pindahkan semua dictionary ke atas agar bisa diakses semua route
-# pets_data = {}
-# orders_data = {}
-# user_profiles = {}
-
-# # ==============================
-# # LOGIKA BISNIS (CLASSES)
-# # ==============================
-# class AuthSystem:
-#     def __init__(self):
-#         self.accounts = {}
-
-#     def register(self, username, email, password):
-#         if username in self.accounts:
-#             return "Username sudah terdaftar!"
-#         self.accounts[username] = {
-#             "email": email,
-#             "password": password
-#         }
-#         return "Registrasi berhasil!"
-
-#     def login(self, email, password):
-#         for username, data in self.accounts.items():
-#             if data["email"] == email and data["password"] == password:
-#                 return username
-#         return None
-
+# ==============================
+# LOGIKA BISNIS (CLASSES)
+# ==============================
 class PetServices:
     def __init__(self, id_services, nama_services, harga_dasar):
         self.id_services = id_services
@@ -140,7 +119,6 @@ class CompanyProfile:
             "support": self.support_email
         }
 
-#auth_system = AuthSystem()
 company_profile = CompanyProfile()
 
 # Fungsi bantuan untuk file
@@ -235,7 +213,6 @@ def add_pet():
         
         # --- LOGIKA UPLOAD FOTO ---
         filename = None
-        # UBAH 'photo' MENJADI 'pet_photo' DI DUA BARIS BAWAH INI:
         if 'pet_photo' in request.files:
             file = request.files['pet_photo']
             if file and file.filename != '' and allowed_file(file.filename):
@@ -294,7 +271,6 @@ def create_order():
     
     return render_template("create_order.html", pets=user_pets)
     
-
 @app.route("/checkout", methods=["POST"])
 def checkout():
     if "user" not in session:
@@ -315,13 +291,11 @@ def checkout():
     bill_data["total"] = service_obj.hitungharga(jarak)
     return render_template("checkout.html", bill=bill_data)
 
-
-@app.route("/about") # Kita gunakan /about agar lebih umum
+@app.route("/about")
 def about():
-    # Mengambil data dari class CompanyProfile yang sudah kamu buat di atas
+    # Mengambil data dari class CompanyProfile
     data = company_profile.get_profile()
     return render_template("about.html", data=data)
-
 
 @app.route("/confirm_payment", methods=["POST"])
 def confirm_payment():
@@ -372,27 +346,6 @@ def company():
     data = company_profile.get_profile()
     return render_template("company.html", data=data)
 
-medical_records = {} # Format: { 'pet_id': [record1, record2] }
-
-# # ROUTES MEDICAL RECORD
-# @app.route("/medical_history/<pet_id>")
-# def medical_history(pet_id):
-#     if "user" not in session:
-#         return redirect(url_for("login"))
-    
-#     # Ambil catatan medis berdasarkan ID Hewan
-#     records = medical_records.get(pet_id, [])
-    
-#     # Cari nama hewan untuk ditampilkan di judul
-#     pet_name = "Hewan"
-#     username = session["user"]
-#     for pet in pets_data.get(username, []):
-#         if pet['id'] == pet_id:
-#             pet_name = pet['name']
-#             break
-
-#     return render_template("medical_history.html", records=records, pet_name=pet_name, pet_id=pet_id)
-
 @app.route("/add_medical_record/<pet_id>", methods=["GET", "POST"])
 def add_medical_record(pet_id):
     if "user" not in session:
@@ -427,7 +380,6 @@ def klinik():
     
     return render_template("klinik.html", username=user.username, pets=user_pets)
 
-
 @app.route("/medical_history/<pet_id>")
 def medical_history(pet_id):
     if "user" not in session:
@@ -446,4 +398,4 @@ def medical_history(pet_id):
                            pet_id=pet_id)
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(host="0.0.0.0", debug=True)

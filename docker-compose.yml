@@ -1,0 +1,31 @@
+services:
+  web:
+    build: .
+    ports:
+      - "5000:5000"
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy # Flask baru akan menyala SETELAH MySQL sehat/siap
+    volumes:
+      - ./static/images/pets:/app/static/images/pets
+
+  db:
+    image: mysql:8.0
+    ports:
+      - "3307:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: petbutler123
+      MYSQL_DATABASE: petbutler_db
+    volumes:
+      - mysql_data:/var/lib/mysql
+    # Fitur pengecekan apakah MySQL sudah siap menerima koneksi
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-ppetbutler123"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  mysql_data:
